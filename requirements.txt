@@ -1,0 +1,6 @@
+jupyter
+watchdog
+nbformat
+nbconvert
+json5
+numpy

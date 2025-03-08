@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+
+
+  monitor:
+    build: .
+    container_name: notebook_monitor
+    command: ["python", -u, "monitor.py"]
+    environment:
+      - PYTHONBUFFERED=1
+    volumes:
+      - jupyter_data:/app/notebooks/
+      
+  jupyter:
+    build: .
+    container_name: jupyter_server
+    volumes:
+      - jupyter_data:/app/notebooks/
+    ports:
+      - "8888:8888"
+volumes:
+  jupyter_data:
