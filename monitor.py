@@ -27,7 +27,8 @@ notebook_name = 'exercise'
 logger.info(f'Current working directory: {ROOT_DIRECTORY} to watch for changes in {notebook_name}')
 DIRECTORY_TO_WATCH = os.path.join(ROOT_DIRECTORY, 'notebooks/')
 
-
+# Placeholder for order of the functions for feedback.
+func_order = None
 
 # Paths
 notebook_path = os.path.join(DIRECTORY_TO_WATCH, notebook_name+'.ipynb')
@@ -67,6 +68,15 @@ def convert_notebook_to_script(notebook_path, converted_nb_path):
     # Find all functions in the script.
     func_def_pattern = r"def\s+\w+\(.*?\):.*?return\s+.*?\n\n"
     func_matches = re.findall(func_def_pattern, script, re.DOTALL)
+
+    global func_order
+
+    func_order = []
+    for func in func_matches:
+        start_idx = func.index('f')
+        end_def = func.index('(')
+        func_order.append(func[start_idx+2:end_def])
+
 
     # Combine the import statements and function definitions.
     summarized_script = import_matches + "\n" + "\n".join(func_matches)
@@ -128,53 +138,91 @@ def generate_feedback(matches, n_tests, n_failed_tests, n_error_tests):
 
     print(matches)
     feedback = "# Results of test  \n"
-    feedback += f"Number of tests: {n_tests}  \n"
+    feedback += f"Number of Exercises: {n_tests}  \n"
 
+    feedback += f"Number of not passed exercises: {n_failed_tests} \n"
+    feedback += f"Number of unscored exercises due to coding errors: {n_error_tests}  \n"
+    
+    feedback += f"## **You passed {n_tests-(n_failed_tests+n_error_tests)} out of {n_tests} exercises.**  \n\n"
 
-    if n_failed_tests >0:
-        feedback += f"Number of failed tests: {n_failed_tests}<br>\n"
-        feedback += f"These tests failed due to logic.\n"
-        
-    if n_error_tests >0:
-        feedback += f"Number of test errors: {n_error_tests}<br>\n"
-        feedback += f"These exercises were not scored due to python errors in your code or its expected output format.<br>"
-    
-    
-    feedback += f"You passed {n_tests-(n_failed_tests+n_error_tests)} out of {n_tests} tests.<br>"
+    feedback += "##  Tests you have not passed: \n"
 
     for match in matches:
         logger.info(f"Function {match['func_name']} produced {match['status']} due to {match['error']}: {match['msg']}")
-        feedback += f"## *{match['func_name']}* did not pass the test.<br>"
-
-
+        feedback += f"###  **{match['func_name']}** did not pass the test. \n"
 
         if match['func_name'] == 'relu_function':
             if match['error'] == 'AssertionError':
-                feedback += "\t- Something is missing in your logic since your result does not match the expected result..<br>"
+                feedback += "Although function runs, the result is different than expected. \n"
                 if '-' in match['msg']:
-                    feedback += "\t- The ReLU function should return 0 for $x < 0$.<br>"
+                    feedback += " - The ReLU function should return 0 for $x < 0$. \n"
                 else:
-                    feedback += "\t- The ReLU function should return x for $x >= 0$.<br>"
+                    feedback += " - The ReLU function should return $x$ for $x >= 0$. \n"
 
 
-        elif match['func_name'] == 'relu_action_layer':
-            pass
+        elif match['func_name'] == 'relu_function_layer':
+            if match['error'] == 'AttributeError':
+                feedback += f" - Encountered error was {match['msg']}. \n"
+                feedback += f" - Please verify you are returning a numpy array. \n"
+            elif match['error'] == 'AssertionError':
+                if 'Tuples differ' in match['msg']:
+                    feedback += f" - Function is returning a different array shape than expected. \n"
+                elif 'Arrays are not equal' in match['msg']:
+                    feedback += f" - Function is returning correct shape. However, content is different than expected. \n"
+
         elif match['func_name'] == 'calculate_neuron_logit':
-            pass
-        elif match['func_name'] == 'calculate_layer_logit':
-            pass
+            if match['error'] == 'AssertionError':
+                # Logit is missing bias.
+                if 'np.float64(0.24000000000000002)' in match['msg']:
+                    feedback += " - The Dot product is correct. You are missing one operation after the dot product. \n"
+                else:
+                    feedback += " - The Dot product or the bias is incorrect . Please verify your procedure. \n"
+            elif match['error'] == 'ValueError':
+                if 'array' in match['msg']:
+                    feedback += f" - Function must return an scalar, not a list nor array. \n"
+                    
+
+        elif match['func_name'] == 'calculate_logits_layer':
+            if match['error'] == 'AttributeError':
+                feedback += f" - Encountered error was {match['msg']}. \n"
+                feedback += f" - Please verify you are returning a numpy array. \n"
+            elif match['error'] == 'AssertionError':
+                if 'Tuples differ' in match['msg']:
+                    feedback += f" - Function returns an array of different shape than the input. \n"
+                elif 'Arrays are not equal' in match['msg']:
+                    feedback += f" - Function returns an array of expected shape. However, the content differs from expected. \n"
+
+
         elif match['func_name'] == 'softmax_layer':
-            pass
+            if match['error'] == 'AttributeError':
+                feedback += f" - Encountered error was {match['msg']}. \n"
+                feedback += f" - Please verify you are returning a numpy array. \n"
+            elif match['error'] == 'AssertionError':
+                if "DESIRED: 1.0\n" in match['msg']:
+                    feedback += f"The sum of probabilities in array is not 1.0. Make sure the sum of probabilities es 1.0. \n"
+                else:
+                    feedback += f"The sum of probabilities in array is 1.0. Nonetheless, the probabilities assigned to the neurons are wrong. \n"
+
         elif match['func_name'] == 'weight_initialization':
             if match['error'] == 'AttributeError':
-                feedback += f" - Encountered error was {match['msg']}.<br>"
-                feedback += f" - Please verify you are returning a numpy array.<br>"
+                feedback += f" - Encountered error was {match['msg']}. \n"
+                feedback += f" - Please verify you are returning a numpy array. \n"
             elif match['error'] == 'TypeError':
-                feedback += f" - The function should return 6 numpy arrays.<br>"
+                feedback += f" - The function should return 6 numpy arrays with the randomly initialized weights. \n"
+            elif match['error'] == 'AssertionError':
+                if 'Tuples differ' in match['msg']:
+                    feedback += f" - One or more weights were initialized with the wrong shape. \n"
+                    feedback += f" - Remember the weights of a layer depends in the input shape of that layer and the number of neurons in the layer."
+
         elif match['func_name'] == 'neural_network':
             if match['error'] == 'AttributeError':
-                feedback += f" - Encountered error was {match['msg']}.<br>"
-                feedback += f" - Please verify you are returning a numpy array.<br>"
+                feedback += f" - Encountered error was {match['msg']}. \n"
+                feedback += f" - Please verify you are returning a numpy array. \n"
+            elif match['error'] == 'TypeError':
+                if "cannot unpack non-iterable" in match['msg']:
+                    feedback += f" -  The function should return three numpy arrays containing the outputs of each layer. \n"
+
+        feedback += f"\n{match['error']}: {match['msg']} \n"
 
     return feedback
 
@@ -198,9 +246,9 @@ def run_tests():
 
     """
 
-    # Run unit tests by discovering all test files in directory.
+    # Run unit tests by running test_answer.py
     try:
-        result = subprocess.run(["python", "-m", "unittest", "discover", "-s", ROOT_DIRECTORY], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result = subprocess.run(["python", "test_answer.py"], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except Exception as e:
         logger.error(f"An error occurred while running the tests: {e}")
         return 
@@ -209,40 +257,52 @@ def run_tests():
     logger.info('STDOUT:\n'+stdout)
 
     # Find all failed tests due to errors in the code or assertion errors.
-    first_pattern = r'^(?P<status>ERROR|FAIL): test_(?P<func_name>[\w+\_]+)\s\('
-    second_pattern = r'^(?P<error>\w*Error):\s(?P<msg>.+)\n'
-    first_matches = re.findall(first_pattern, stdout, re.MULTILINE)
-    second_matches = re.findall(second_pattern, stdout, re.MULTILINE)
+    test_pattern = r'^(?P<status>ERROR|FAIL): test_(?P<func_name>[\w+\_]+)\s\(|^(?P<error>\w*Error):\s(?P<msg>[\w\.\(\)\s\!\-:\/\']+\={0,1}\s[\w\.\-]*)'
+    test_matches = re.findall(test_pattern, stdout, re.MULTILINE)
+    print(test_matches)
 
-    results = list(zip(first_matches, second_matches))
-    # GENERATE USING RESULTS
     test_output_matches = []
 
-    # Merge dictionaries
-    test_errors = []
-    for m1, m2 in zip(first_matches, second_matches):
-        result = m1.groupdict()
-        result.update(m2.groupdict())
-        test_errors.append(result)
+    n_failed_tests = 0
+    n_error_tests = 0
 
-    print(test_errors)
+    global func_order
+
+    print(func_order)
+    for first_match, second_match in zip(test_matches[::2], test_matches[1::2]):
+
+        test_output_matches.append(
+            {
+            'status': first_match[0], 
+            'func_name': first_match[1], 
+            'error': second_match[2], 
+            'msg': second_match[3].replace('\n\n', '\n'),
+            'order': func_order.index(first_match[1])
+            }
+        )
+        if first_match[0]=='FAIL':
+            n_failed_tests +=1
+        elif first_match[0]=='ERROR':
+            n_error_tests +=1
+
+
+    print(test_output_matches)
+
+    test_output_matches = sorted(test_output_matches, key= lambda x: x['order'])
+    print(test_output_matches)
+
+
     # Find number of tests run.
     n_tests_patterns = r"Ran (\d+) test"
     n_tests = int(re.search(n_tests_patterns, stdout).group(1))
 
     logger.info(f"Number of tests: {n_tests}")
 
-    # Find number of tests not passed due to asserts.
-    failed_pattern= r"failed\=(\d+)"
-    match = re.search(failed_pattern, stdout)
-    n_failed_tests = int(match.group(1)) if match else 0
+    # Number of tests not passed due to asserts.
     logger.info(f"Number of failed tests: {n_failed_tests}")
     
 
-    # Find number of tests not passed due to python errors in function or test.
-    errors_patterns = r"errors\=(\d+)"
-    match = re.search(errors_patterns, stdout)
-    n_error_tests = int(match.group(1)) if match else 0
+    # Number of tests not passed due to python errors in function or test.
     logger.info(f"Number of python errors tests: {n_error_tests}")
 
     # Generate feedback in markdown format.
@@ -281,9 +341,6 @@ class NotebookHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
-
-
-
     event_handler = NotebookHandler()
     observer = Observer()
     observer.schedule(event_handler, DIRECTORY_TO_WATCH, recursive=False)
