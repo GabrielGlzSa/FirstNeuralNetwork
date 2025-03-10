@@ -33,7 +33,7 @@ This will set up and run the Jupyter server with the notebook for practicing Pyt
 
 ## Vulnerabilities Features and enhancements
 
-The unnitest imports the functions of the user and all the imports the user used. This can be exploited by adding code in the function for code injection. It is recommended that the code be updated to consider this by only importing libraries that are whitelisted. 
+The unittest imports the functions of the user and all the imports the user used. This can be exploited by adding code in the function for code injection. It is recommended that the code be updated to consider this by only importing libraries that are whitelisted. 
 
 
 ## Feedback improvement
@@ -43,13 +43,11 @@ Possible feedback is currently hardcoded into the generate_feedback function. No
 
 ## License
 
-Include the license under which your project is distributed. For example:
-
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 Contact
 
 Provide information on how people can contact you for support, questions, or contributions. For example:
 
-Email: your-email@example.com
-GitHub: your-username
+Email: gabriel.glzsa@gmail.com
+GitHub: GabrielGlzSa
