@@ -31,6 +31,22 @@ sudo docker-compose up
 
 This will set up and run the Jupyter server with the notebook for practicing Python programming skills in neural networks. The autograding service will be automatically initialized to track changes and provide feedback when the notebook is saved. **Notebook must be refreshed to see feedback at the bottom.** When docker containers are started, a fresh copy of the notebook is created. Previous progress of functions is displayed in the exercise.py file. However, this file is updated whenever the notebook is saved. 
 
+## Usage
+
+Start the Docker containers if they are not running:
+```
+sudo docker-compose up
+```
+
+Access the jupyter server using the link from the terminal. Example:
+```
+jupyter_server | [I 2025-03-10 20:24:02.673 ServerApp]     http://127.0.0.1:8888/tree?token=928f8230ee59795f576c42b86d91386670d8eedf9f06563f
+```
+
+## Example of feedback
+
+![Example of the feedback provided](./feedback_example.png)
+
 ## Vulnerabilities
 
 The unittest imports the functions of the user and all the imports the user used. This can be exploited by adding code in the function for code injection. It is recommended that the code be updated to consider this by only importing libraries that are whitelisted. 
