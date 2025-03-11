@@ -49,7 +49,15 @@ jupyter_server | [I 2025-03-10 20:24:02.673 ServerApp]     http://127.0.0.1:8888
 
 ## Vulnerabilities
 
-The unittest imports the functions of the user and all the imports the user used. This can be exploited by adding code in the function for code injection. It is recommended that the code be updated to consider this by only importing libraries that are whitelisted. 
+The unittest imports the functions of the user and all the imports the user used. This can be exploited by adding code in the function for code injection. It is recommended that the code be updated to consider this by only importing libraries that are whitelisted. Consider updating the following lines in monitor.py to whitelist libraries:
+
+```
+matches = re.findall(import_pattern, script, re.MULTILINE)
+
+# Combine the import statements.
+import_matches = '\n'.join([match[0] for match in matches])
+logger.info(f'Import statements:\n{import_matches}')
+```
 
 
 ## Feedback improvement
