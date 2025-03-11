@@ -136,20 +136,20 @@ def generate_feedback(matches, n_tests, n_failed_tests, n_error_tests):
         str: The feedback to be provided to the student.
     """
 
-    print(matches)
+    logger.debug(matches)
     feedback = "# Results of test  \n"
-    feedback += f"Number of Exercises: {n_tests}  \n"
-
-    feedback += f"Number of not passed exercises: {n_failed_tests} \n"
-    feedback += f"Number of unscored exercises due to coding errors: {n_error_tests}  \n"
+    feedback += f"Number of Exercises: {n_tests}  \n\n"
+    feedback += f"Number of not passed exercises: {n_failed_tests} \n\n"
+    feedback += f"Number of unscored exercises due to coding errors: {n_error_tests}  \n\n"
     
     feedback += f"## **You passed {n_tests-(n_failed_tests+n_error_tests)} out of {n_tests} exercises.**  \n\n"
 
-    feedback += "##  Tests you have not passed: \n"
+    if matches:
+        feedback += "##  Tests you have not passed: \n"
 
     for match in matches:
         logger.info(f"Function {match['func_name']} produced {match['status']} due to {match['error']}: {match['msg']}")
-        feedback += f"###  **{match['func_name']}** did not pass the test. \n"
+        feedback += f"###  **{match['func_name']}** \n"
 
         if match['func_name'] == 'relu_function':
             if match['error'] == 'AssertionError':
@@ -212,17 +212,17 @@ def generate_feedback(matches, n_tests, n_failed_tests, n_error_tests):
             elif match['error'] == 'AssertionError':
                 if 'Tuples differ' in match['msg']:
                     feedback += f" - One or more weights were initialized with the wrong shape. \n"
-                    feedback += f" - Remember the weights of a layer depends in the input shape of that layer and the number of neurons in the layer."
+                    feedback += f" - Remember the weights of a layer depends in the input shape of that layer and the number of neurons in the layer. \n"
 
         elif match['func_name'] == 'neural_network':
             if match['error'] == 'AttributeError':
                 feedback += f" - Encountered error was {match['msg']}. \n"
-                feedback += f" - Please verify you are returning a numpy array. \n"
+                feedback += f" - Please verify you are returning the output of each layer. \n"
             elif match['error'] == 'TypeError':
                 if "cannot unpack non-iterable" in match['msg']:
                     feedback += f" -  The function should return three numpy arrays containing the outputs of each layer. \n"
 
-        feedback += f"\n{match['error']}: {match['msg']} \n"
+        # feedback += f"\n{match['error']}: {match['msg']} \n"
 
     return feedback
 
@@ -256,57 +256,57 @@ def run_tests():
     stdout = result.stdout
     logger.info('STDOUT:\n'+stdout)
 
-    # Find all failed tests due to errors in the code or assertion errors.
-    test_pattern = r'^(?P<status>ERROR|FAIL): test_(?P<func_name>[\w+\_]+)\s\(|^(?P<error>\w*Error):\s(?P<msg>[\w\.\(\)\s\!\-:\/\']+\={0,1}\s[\w\.\-]*)'
-    test_matches = re.findall(test_pattern, stdout, re.MULTILINE)
-    print(test_matches)
-
-    test_output_matches = []
-
-    n_failed_tests = 0
-    n_error_tests = 0
-
-    global func_order
-
-    print(func_order)
-    for first_match, second_match in zip(test_matches[::2], test_matches[1::2]):
-
-        test_output_matches.append(
-            {
-            'status': first_match[0], 
-            'func_name': first_match[1], 
-            'error': second_match[2], 
-            'msg': second_match[3].replace('\n\n', '\n'),
-            'order': func_order.index(first_match[1])
-            }
-        )
-        if first_match[0]=='FAIL':
-            n_failed_tests +=1
-        elif first_match[0]=='ERROR':
-            n_error_tests +=1
-
-
-    print(test_output_matches)
-
-    test_output_matches = sorted(test_output_matches, key= lambda x: x['order'])
-    print(test_output_matches)
-
-
-    # Find number of tests run.
-    n_tests_patterns = r"Ran (\d+) test"
-    n_tests = int(re.search(n_tests_patterns, stdout).group(1))
-
-    logger.info(f"Number of tests: {n_tests}")
-
-    # Number of tests not passed due to asserts.
-    logger.info(f"Number of failed tests: {n_failed_tests}")
+    if 'SyntaxError' not in stdout: 
     
+        # Find all failed tests due to errors in the code or assertion errors.
+        test_pattern = r'^(?P<status>ERROR|FAIL): test_(?P<func_name>[\w+\_]+)\s\(|^(?P<error>\w*Error):\s(?P<msg>[\w\.\(\)\s\!\-:\/\']+\={0,1}\s[\w\.\-]*)'
+        test_matches = re.findall(test_pattern, stdout, re.MULTILINE)
 
-    # Number of tests not passed due to python errors in function or test.
-    logger.info(f"Number of python errors tests: {n_error_tests}")
+        test_output_matches = []
 
-    # Generate feedback in markdown format.
-    cell_content = generate_feedback(test_output_matches, n_tests, n_failed_tests, n_error_tests)          
+        n_failed_tests = 0
+        n_error_tests = 0
+
+        global func_order
+
+        for first_match, second_match in zip(test_matches[::2], test_matches[1::2]):
+
+            test_output_matches.append(
+                {
+                'status': first_match[0], 
+                'func_name': first_match[1], 
+                'error': second_match[2], 
+                'msg': second_match[3].replace('\n\n', '\n'),
+                'order': func_order.index(first_match[1])
+                }
+            )
+            if first_match[0]=='FAIL':
+                n_failed_tests +=1
+            elif first_match[0]=='ERROR':
+                n_error_tests +=1
+
+
+        # Sort functions by order in notebook.
+        test_output_matches = sorted(test_output_matches, key= lambda x: x['order'])
+
+
+        # Find number of tests run.
+        n_tests_patterns = r"Ran (\d+) test"
+        n_tests = int(re.search(n_tests_patterns, stdout).group(1))
+
+        logger.info(f"Number of tests: {n_tests}")
+
+        # Number of tests not passed due to asserts.
+        logger.info(f"Number of failed tests: {n_failed_tests}")
+        
+
+        # Number of tests not passed due to python errors in function or test.
+        logger.info(f"Number of python errors tests: {n_error_tests}")
+
+        # Generate feedback in markdown format.
+        cell_content = generate_feedback(test_output_matches, n_tests, n_failed_tests, n_error_tests) 
+    else:
+        cell_content = "# Syntax error in your functions. Please fix it before being scored."         
     
     #Update the last cell in the notebook with the feedback.
     edit_last_markdown_cell(notebook_path, cell_content)
