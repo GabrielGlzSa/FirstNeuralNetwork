@@ -198,10 +198,12 @@ def generate_feedback(matches, n_tests, n_failed_tests, n_error_tests):
                 feedback += f" - Encountered error was {match['msg']}. \n"
                 feedback += f" - Please verify you are returning a numpy array. \n"
             elif match['error'] == 'AssertionError':
-                if "DESIRED: 1.0\n" in match['msg']:
-                    feedback += f"The sum of probabilities in array is not 1.0. Make sure the sum of probabilities es 1.0. \n"
-                else:
-                    feedback += f"The sum of probabilities in array is 1.0. Nonetheless, the probabilities assigned to the neurons are wrong. \n"
+                if "Not equal to tolerance" in match['msg']:
+                    feedback += f" - The sum of probabilities is not close to 1.0. \n"
+                    feedback += f" - Make sure the sum per row is close to 1.0. \n"
+                elif "Arrays are not equal":
+                    feedback += f" - The probabilities returned by the function are incorrect."
+
 
         elif match['func_name'] == 'weight_initialization':
             if match['error'] == 'AttributeError':
@@ -221,7 +223,23 @@ def generate_feedback(matches, n_tests, n_failed_tests, n_error_tests):
             elif match['error'] == 'TypeError':
                 if "cannot unpack non-iterable" in match['msg']:
                     feedback += f" -  The function should return three numpy arrays containing the outputs of each layer. \n"
+            elif match['error'] == 'ValueError':
+                if 'matmul: Input operand 1 has a mismatch in its core dimension' in match['msg']:
+                    feedback += f" - Verify the shapes of weights were correctly initialized using function 'weight_initialization' \n"
+                    feedback += f" - Verify you are passing the correct input to each layer.' \n"
+                elif 'operands could not be broadcast together with shapes' in match['msg']:
+                    feedback += f" - Verify you are using the correct bias in each layer."
+            elif match['error'] == 'AssertionError':
+                if 'Arrays are not equal' in match['msg']:
+                    if '/ 320' in match['msg']:
+                        feedback += f" - The output of a hidden layer is incorrect. \n"
+                        feedback += f" - Remember to apply the ReLu or softmax function after calculating the logits. \n"
+                    elif '/ 40' in match['msg']:
+                        feedback += f" - The probabilities returned by the softmax layer are incorrect. \n"
+                elif 'Tuples differ:' in match['msg']:
+                    feedback += f" - The output shape of layer is incorrect.\n"
 
+            
         # feedback += f"\n{match['error']}: {match['msg']} \n"
 
     return feedback
