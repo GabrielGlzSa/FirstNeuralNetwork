@@ -69,7 +69,7 @@ Possible feedback is currently hardcoded into the generate_feedback function. No
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-Contact
+## Contact
 
 Provide information on how people can contact you for support, questions, or contributions. For example:
 
